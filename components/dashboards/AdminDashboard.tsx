@@ -27,6 +27,8 @@ const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
   const [editForm, setEditForm] = useState<any>({});
   const [selectedCanvasSize, setSelectedCanvasSize] = useState('50x50');
   const [selectedPromoId, setSelectedPromoId] = useState('promo-001');
+  const [canvasZoom, setCanvasZoom] = useState(0.8);
+  const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Mock Data enriquecida
@@ -96,18 +98,22 @@ const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
     const height = Math.round(selectedSize.heightCm * pixelPerCm);
     canvas.width = width;
     canvas.height = height;
+    setCanvasDimensions({ width, height });
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.fillStyle = '#0f172a';
+    ctx.fillStyle = '#0b1120';
     ctx.fillRect(0, 0, width, height);
 
-    ctx.fillStyle = '#f97316';
+    const headerGradient = ctx.createLinearGradient(0, 0, width, 0);
+    headerGradient.addColorStop(0, '#14b8a6');
+    headerGradient.addColorStop(1, '#0ea5e9');
+    ctx.fillStyle = headerGradient;
     ctx.fillRect(0, 0, width, Math.max(60, height * 0.12));
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 28px Inter, Arial, sans-serif';
-    ctx.fillText('Premios Red', 24, 42);
+    ctx.font = 'bold 26px Inter, Arial, sans-serif';
+    ctx.fillText('Premios Red • Medusa Lab', 24, 42);
 
     ctx.font = 'bold 22px Inter, Arial, sans-serif';
     ctx.fillText(selectedPromotion.title.toUpperCase(), 24, Math.max(90, height * 0.18));
@@ -128,9 +134,9 @@ const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
     ctx.fillText('• Cupón premium y acceso prioritario.', 40, Math.max(295, height * 0.47));
     ctx.fillText('• Registro digital con validación notarial.', 40, Math.max(320, height * 0.51));
 
-    ctx.fillStyle = '#f97316';
+    ctx.fillStyle = '#22d3ee';
     ctx.fillRect(24, height - 80, width - 48, 50);
-    ctx.fillStyle = '#0f172a';
+    ctx.fillStyle = '#0b1120';
     ctx.font = 'bold 18px Inter, Arial, sans-serif';
     ctx.fillText('premiosred.com | +18', 40, height - 48);
   }, [selectedPromotion, selectedSize]);
@@ -449,11 +455,11 @@ const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-black uppercase tracking-tighter">Canvas Maestro de Promos</h2>
-                <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mt-1">Generador de formatos 50x50, 50x150, 70x100 cm y A4</p>
+                <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mt-1">Generador Medusa.js para formatos 50x50, 50x150, 70x100 cm y A4</p>
               </div>
               <button
                 onClick={handleExportPdf}
-                className="bg-orange-600 hover:bg-orange-500 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-orange-600/20 flex items-center gap-2"
+                className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-cyan-500/20 flex items-center gap-2"
               >
                 <FileText className="w-4 h-4" /> Exportar PDF
               </button>
@@ -461,62 +467,105 @@ const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
 
             <div className="grid grid-cols-1 xl:grid-cols-[1.1fr_1.4fr] gap-8">
               <div className="bg-slate-900/40 border border-white/5 rounded-[2.5rem] p-8 space-y-6">
-                <div>
-                  <h3 className="text-lg font-black uppercase tracking-tighter mb-2">Formato de impresión</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    {canvasSizes.map((size) => (
-                      <button
-                        key={size.id}
-                        onClick={() => setSelectedCanvasSize(size.id)}
-                        className={`px-4 py-3 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all ${
-                          selectedCanvasSize === size.id
-                            ? 'bg-orange-600/20 border-orange-500 text-orange-500'
-                            : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        {size.label}
-                      </button>
-                    ))}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-black uppercase tracking-tighter mb-2">Formato de impresión</h3>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Selecciona el tamaño final</p>
+                  </div>
+                  <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-cyan-300">
+                    {selectedSize.label}
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {canvasSizes.map((size) => (
+                    <button
+                      key={size.id}
+                      onClick={() => setSelectedCanvasSize(size.id)}
+                      className={`px-4 py-3 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all ${
+                        selectedCanvasSize === size.id
+                          ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
+                          : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {size.label}
+                    </button>
+                  ))}
+                </div>
 
-                <div>
-                  <h3 className="text-lg font-black uppercase tracking-tighter mb-2">Registros de promociones</h3>
-                  <div className="space-y-3">
-                    {promotionRecords.map((promo) => (
-                      <button
-                        key={promo.id}
-                        onClick={() => setSelectedPromoId(promo.id)}
-                        className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all text-left ${
-                          selectedPromoId === promo.id
-                            ? 'border-orange-500/60 bg-orange-600/10'
-                            : 'border-white/10 bg-white/5 hover:bg-white/10'
-                        }`}
-                      >
-                        <div>
-                          <div className="text-xs font-black uppercase">{promo.title}</div>
-                          <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                            {promo.sponsor} · {promo.updatedAt}
-                          </div>
-                        </div>
-                        <div className="text-[9px] font-black uppercase text-orange-500">{promo.status}</div>
-                      </button>
-                    ))}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-black uppercase tracking-tighter">Registros de promociones</h3>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Gestión Medusa.js</span>
+                  </div>
+                  <div className="overflow-hidden rounded-2xl border border-white/10">
+                    <table className="w-full text-left text-[10px] uppercase tracking-widest">
+                      <thead className="bg-white/5 text-slate-500">
+                        <tr>
+                          <th className="p-4">ID</th>
+                          <th className="p-4">Campaña</th>
+                          <th className="p-4">Sponsor</th>
+                          <th className="p-4">Formato</th>
+                          <th className="p-4 text-right">Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {promotionRecords.map((promo) => (
+                          <tr
+                            key={promo.id}
+                            onClick={() => setSelectedPromoId(promo.id)}
+                            className={`cursor-pointer transition-colors ${
+                              selectedPromoId === promo.id ? 'bg-cyan-500/10' : 'hover:bg-white/[0.04]'
+                            }`}
+                          >
+                            <td className="p-4 font-black text-white">{promo.id}</td>
+                            <td className="p-4 text-white">{promo.title}</td>
+                            <td className="p-4 text-slate-300">{promo.sponsor}</td>
+                            <td className="p-4 text-slate-400">{canvasSizes.find((size) => size.id === promo.sizeId)?.label}</td>
+                            <td className="p-4 text-right text-cyan-300 font-black">{promo.status}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
 
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                  Vista previa generada en {selectedSize.label}. Ajusta el formato para exportar en PDF.
+                  Vista previa generada en {selectedSize.label}. Ajusta el zoom para revisar detalles antes de exportar.
                 </div>
               </div>
 
               <div className="bg-slate-900/40 border border-white/5 rounded-[2.5rem] p-8 flex flex-col items-center gap-6">
-                <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                  Canvas activo: {selectedPromotion.title}
+                <div className="flex items-center justify-between w-full text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  <div className="flex items-center gap-3">
+                    <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></span>
+                    Canvas activo: {selectedPromotion.title}
+                  </div>
+                  <div className="text-cyan-300">
+                    {canvasDimensions.width}px · {canvasDimensions.height}px
+                  </div>
                 </div>
-                <div className="bg-slate-950 rounded-[2rem] border border-white/10 p-4 w-full flex items-center justify-center overflow-auto">
-                  <canvas ref={canvasRef} className="rounded-2xl shadow-2xl border border-white/10" />
+                <div className="bg-slate-950/80 rounded-[2rem] border border-white/10 p-6 w-full min-h-[420px] flex items-center justify-center overflow-auto relative">
+                  <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,#38bdf8_1px,transparent_0)] [background-size:24px_24px]"></div>
+                  <div className="relative z-10">
+                    <canvas
+                      ref={canvasRef}
+                      className="rounded-2xl shadow-2xl border border-white/10"
+                      style={{ transform: `scale(${canvasZoom})`, transformOrigin: 'center' }}
+                    />
+                  </div>
+                </div>
+                <div className="w-full flex items-center gap-4">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Zoom</span>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="1.2"
+                    step="0.05"
+                    value={canvasZoom}
+                    onChange={(event) => setCanvasZoom(Number(event.target.value))}
+                    className="flex-1 accent-cyan-400"
+                  />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-cyan-300">{Math.round(canvasZoom * 100)}%</span>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 w-full">
                   <button
@@ -525,7 +574,7 @@ const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
                   >
                     Vista previa PDF
                   </button>
-                  <button className="flex-1 bg-orange-600 hover:bg-orange-500 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-2xl shadow-orange-600/30 transition-all flex items-center justify-center gap-2">
+                  <button className="flex-1 bg-cyan-500 hover:bg-cyan-400 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-2xl shadow-cyan-500/30 transition-all flex items-center justify-center gap-2 text-slate-900">
                     <Save className="w-4 h-4" /> Guardar versión
                   </button>
                 </div>
