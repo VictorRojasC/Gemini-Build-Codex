@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   LayoutDashboard, Users, Ticket, Settings, LogOut, 
   Search, Bell, ShieldCheck, TrendingUp, DollarSign,
@@ -25,6 +25,11 @@ const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
   const [raffles, setRaffles] = useState<Raffle[]>(RAFFLES);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [editForm, setEditForm] = useState<any>({});
+  const [selectedCanvasSize, setSelectedCanvasSize] = useState('50x50');
+  const [selectedPromoId, setSelectedPromoId] = useState('promo-001');
+  const [canvasZoom, setCanvasZoom] = useState(0.8);
+  const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Mock Data enriquecida
   const stats = [
@@ -39,6 +44,127 @@ const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
     { id: 'AG-2', brand: 'AMAZON', benefit: '5% Tarjetas Regalo', category: 'Marketplace', status: 'Activo', commissions: '1.0%', logo: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg' },
     { id: 'AG-3', brand: 'ZARA', benefit: '10% Descuento Temporada', category: 'Moda', status: 'Pausado', commissions: '5.0%', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/fd/Zara_Logo.svg' },
   ];
+
+  const canvasSizes = [
+    { id: '50x50', label: '50 x 50 cm', widthCm: 50, heightCm: 50 },
+    { id: '50x150', label: '50 x 150 cm', widthCm: 50, heightCm: 150 },
+    { id: '70x100', label: '70 x 100 cm', widthCm: 70, heightCm: 100 },
+    { id: 'a4', label: 'A4 vertical', widthCm: 21, heightCm: 29.7 },
+  ];
+
+  const promotionRecords = [
+    {
+      id: 'promo-001',
+      title: 'Pack Tecnología',
+      sponsor: 'Apple',
+      sizeId: '50x50',
+      status: 'Aprobado',
+      updatedAt: '2026-03-12',
+    },
+    {
+      id: 'promo-002',
+      title: 'Pack Moda',
+      sponsor: 'Zara',
+      sizeId: '50x150',
+      status: 'En revisión',
+      updatedAt: '2026-03-10',
+    },
+    {
+      id: 'promo-003',
+      title: 'Pack Cosmética',
+      sponsor: 'Druni',
+      sizeId: '70x100',
+      status: 'Aprobado',
+      updatedAt: '2026-03-08',
+    },
+    {
+      id: 'promo-004',
+      title: 'Pack Caribe',
+      sponsor: 'RIU',
+      sizeId: 'a4',
+      status: 'Borrador',
+      updatedAt: '2026-03-05',
+    },
+  ];
+
+  const selectedSize = canvasSizes.find((size) => size.id === selectedCanvasSize) ?? canvasSizes[0];
+  const selectedPromotion = promotionRecords.find((promo) => promo.id === selectedPromoId) ?? promotionRecords[0];
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const pixelPerCm = 8;
+    const width = Math.round(selectedSize.widthCm * pixelPerCm);
+    const height = Math.round(selectedSize.heightCm * pixelPerCm);
+    canvas.width = width;
+    canvas.height = height;
+    setCanvasDimensions({ width, height });
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#0b1120';
+    ctx.fillRect(0, 0, width, height);
+
+    const headerGradient = ctx.createLinearGradient(0, 0, width, 0);
+    headerGradient.addColorStop(0, '#14b8a6');
+    headerGradient.addColorStop(1, '#0ea5e9');
+    ctx.fillStyle = headerGradient;
+    ctx.fillRect(0, 0, width, Math.max(60, height * 0.12));
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 26px Inter, Arial, sans-serif';
+    ctx.fillText('Premios Red • Medusa Lab', 24, 42);
+
+    ctx.font = 'bold 22px Inter, Arial, sans-serif';
+    ctx.fillText(selectedPromotion.title.toUpperCase(), 24, Math.max(90, height * 0.18));
+
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '16px Inter, Arial, sans-serif';
+    ctx.fillText(`Sponsor: ${selectedPromotion.sponsor}`, 24, Math.max(120, height * 0.22));
+    ctx.fillText(`Formato: ${selectedSize.label}`, 24, Math.max(150, height * 0.26));
+    ctx.fillText(`Estado: ${selectedPromotion.status}`, 24, Math.max(180, height * 0.3));
+
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(24, Math.max(210, height * 0.35), width - 48, Math.max(80, height * 0.15));
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 18px Inter, Arial, sans-serif';
+    ctx.fillText('Beneficios destacados', 40, Math.max(240, height * 0.39));
+    ctx.font = '14px Inter, Arial, sans-serif';
+    ctx.fillText('• Participaciones dobles en el sorteo anual.', 40, Math.max(270, height * 0.43));
+    ctx.fillText('• Cupón premium y acceso prioritario.', 40, Math.max(295, height * 0.47));
+    ctx.fillText('• Registro digital con validación notarial.', 40, Math.max(320, height * 0.51));
+
+    ctx.fillStyle = '#22d3ee';
+    ctx.fillRect(24, height - 80, width - 48, 50);
+    ctx.fillStyle = '#0b1120';
+    ctx.font = 'bold 18px Inter, Arial, sans-serif';
+    ctx.fillText('premiosred.com | +18', 40, height - 48);
+  }, [selectedPromotion, selectedSize]);
+
+  const handleExportPdf = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL('image/png');
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Exportar Canvas</title>
+          <style>
+            body { margin: 0; display: flex; justify-content: center; align-items: center; background: #0f172a; }
+            img { max-width: 100%; height: auto; }
+          </style>
+        </head>
+        <body>
+          <img src="${dataUrl}" />
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
 
   const handleEditOpen = (item: any, type: string) => {
     setEditingItem({ ...item, _type: type });
@@ -323,6 +449,139 @@ const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
             </div>
           </div>
         );
+      case 'promo-canvas':
+        return (
+          <div className="space-y-8 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-black uppercase tracking-tighter">Canvas Maestro de Promos</h2>
+                <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mt-1">Generador Medusa.js para formatos 50x50, 50x150, 70x100 cm y A4</p>
+              </div>
+              <button
+                onClick={handleExportPdf}
+                className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-cyan-500/20 flex items-center gap-2"
+              >
+                <FileText className="w-4 h-4" /> Exportar PDF
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-[1.1fr_1.4fr] gap-8">
+              <div className="bg-slate-900/40 border border-white/5 rounded-[2.5rem] p-8 space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-black uppercase tracking-tighter mb-2">Formato de impresión</h3>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Selecciona el tamaño final</p>
+                  </div>
+                  <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-cyan-300">
+                    {selectedSize.label}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {canvasSizes.map((size) => (
+                    <button
+                      key={size.id}
+                      onClick={() => setSelectedCanvasSize(size.id)}
+                      className={`px-4 py-3 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all ${
+                        selectedCanvasSize === size.id
+                          ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
+                          : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {size.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-black uppercase tracking-tighter">Registros de promociones</h3>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Gestión Medusa.js</span>
+                  </div>
+                  <div className="overflow-hidden rounded-2xl border border-white/10">
+                    <table className="w-full text-left text-[10px] uppercase tracking-widest">
+                      <thead className="bg-white/5 text-slate-500">
+                        <tr>
+                          <th className="p-4">ID</th>
+                          <th className="p-4">Campaña</th>
+                          <th className="p-4">Sponsor</th>
+                          <th className="p-4">Formato</th>
+                          <th className="p-4 text-right">Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {promotionRecords.map((promo) => (
+                          <tr
+                            key={promo.id}
+                            onClick={() => setSelectedPromoId(promo.id)}
+                            className={`cursor-pointer transition-colors ${
+                              selectedPromoId === promo.id ? 'bg-cyan-500/10' : 'hover:bg-white/[0.04]'
+                            }`}
+                          >
+                            <td className="p-4 font-black text-white">{promo.id}</td>
+                            <td className="p-4 text-white">{promo.title}</td>
+                            <td className="p-4 text-slate-300">{promo.sponsor}</td>
+                            <td className="p-4 text-slate-400">{canvasSizes.find((size) => size.id === promo.sizeId)?.label}</td>
+                            <td className="p-4 text-right text-cyan-300 font-black">{promo.status}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  Vista previa generada en {selectedSize.label}. Ajusta el zoom para revisar detalles antes de exportar.
+                </div>
+              </div>
+
+              <div className="bg-slate-900/40 border border-white/5 rounded-[2.5rem] p-8 flex flex-col items-center gap-6">
+                <div className="flex items-center justify-between w-full text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  <div className="flex items-center gap-3">
+                    <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></span>
+                    Canvas activo: {selectedPromotion.title}
+                  </div>
+                  <div className="text-cyan-300">
+                    {canvasDimensions.width}px · {canvasDimensions.height}px
+                  </div>
+                </div>
+                <div className="bg-slate-950/80 rounded-[2rem] border border-white/10 p-6 w-full min-h-[420px] flex items-center justify-center overflow-auto relative">
+                  <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,#38bdf8_1px,transparent_0)] [background-size:24px_24px]"></div>
+                  <div className="relative z-10">
+                    <canvas
+                      ref={canvasRef}
+                      className="rounded-2xl shadow-2xl border border-white/10"
+                      style={{ transform: `scale(${canvasZoom})`, transformOrigin: 'center' }}
+                    />
+                  </div>
+                </div>
+                <div className="w-full flex items-center gap-4">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Zoom</span>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="1.2"
+                    step="0.05"
+                    value={canvasZoom}
+                    onChange={(event) => setCanvasZoom(Number(event.target.value))}
+                    className="flex-1 accent-cyan-400"
+                  />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-cyan-300">{Math.round(canvasZoom * 100)}%</span>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3 w-full">
+                  <button
+                    onClick={handleExportPdf}
+                    className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all"
+                  >
+                    Vista previa PDF
+                  </button>
+                  <button className="flex-1 bg-cyan-500 hover:bg-cyan-400 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-2xl shadow-cyan-500/30 transition-all flex items-center justify-center gap-2 text-slate-900">
+                    <Save className="w-4 h-4" /> Guardar versión
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
 
       default:
         return (
@@ -381,6 +640,7 @@ const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
             { id: 'agreements', label: 'Convenios Marcas', icon: Handshake },
             { id: 'raffles', label: 'Sorteos Activos', icon: Gift },
             { id: 'entries', label: 'Participaciones', icon: Ticket },
+            { id: 'promo-canvas', label: 'Canvas Promos', icon: ImageIcon },
           ].map((item) => (
             <button
               key={item.id}
