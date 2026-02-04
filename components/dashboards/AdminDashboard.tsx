@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   LayoutDashboard, Users, Ticket, Settings, LogOut, 
   Search, Bell, ShieldCheck, TrendingUp, DollarSign,
@@ -25,6 +25,9 @@ const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
   const [raffles, setRaffles] = useState<Raffle[]>(RAFFLES);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [editForm, setEditForm] = useState<any>({});
+  const [selectedCanvasSize, setSelectedCanvasSize] = useState('50x50');
+  const [selectedPromoId, setSelectedPromoId] = useState('promo-001');
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Mock Data enriquecida
   const stats = [
@@ -39,6 +42,123 @@ const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
     { id: 'AG-2', brand: 'AMAZON', benefit: '5% Tarjetas Regalo', category: 'Marketplace', status: 'Activo', commissions: '1.0%', logo: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg' },
     { id: 'AG-3', brand: 'ZARA', benefit: '10% Descuento Temporada', category: 'Moda', status: 'Pausado', commissions: '5.0%', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/fd/Zara_Logo.svg' },
   ];
+
+  const canvasSizes = [
+    { id: '50x50', label: '50 x 50 cm', widthCm: 50, heightCm: 50 },
+    { id: '50x150', label: '50 x 150 cm', widthCm: 50, heightCm: 150 },
+    { id: '70x100', label: '70 x 100 cm', widthCm: 70, heightCm: 100 },
+    { id: 'a4', label: 'A4 vertical', widthCm: 21, heightCm: 29.7 },
+  ];
+
+  const promotionRecords = [
+    {
+      id: 'promo-001',
+      title: 'Pack Tecnología',
+      sponsor: 'Apple',
+      sizeId: '50x50',
+      status: 'Aprobado',
+      updatedAt: '2026-03-12',
+    },
+    {
+      id: 'promo-002',
+      title: 'Pack Moda',
+      sponsor: 'Zara',
+      sizeId: '50x150',
+      status: 'En revisión',
+      updatedAt: '2026-03-10',
+    },
+    {
+      id: 'promo-003',
+      title: 'Pack Cosmética',
+      sponsor: 'Druni',
+      sizeId: '70x100',
+      status: 'Aprobado',
+      updatedAt: '2026-03-08',
+    },
+    {
+      id: 'promo-004',
+      title: 'Pack Caribe',
+      sponsor: 'RIU',
+      sizeId: 'a4',
+      status: 'Borrador',
+      updatedAt: '2026-03-05',
+    },
+  ];
+
+  const selectedSize = canvasSizes.find((size) => size.id === selectedCanvasSize) ?? canvasSizes[0];
+  const selectedPromotion = promotionRecords.find((promo) => promo.id === selectedPromoId) ?? promotionRecords[0];
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const pixelPerCm = 8;
+    const width = Math.round(selectedSize.widthCm * pixelPerCm);
+    const height = Math.round(selectedSize.heightCm * pixelPerCm);
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = '#f97316';
+    ctx.fillRect(0, 0, width, Math.max(60, height * 0.12));
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 28px Inter, Arial, sans-serif';
+    ctx.fillText('Premios Red', 24, 42);
+
+    ctx.font = 'bold 22px Inter, Arial, sans-serif';
+    ctx.fillText(selectedPromotion.title.toUpperCase(), 24, Math.max(90, height * 0.18));
+
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '16px Inter, Arial, sans-serif';
+    ctx.fillText(`Sponsor: ${selectedPromotion.sponsor}`, 24, Math.max(120, height * 0.22));
+    ctx.fillText(`Formato: ${selectedSize.label}`, 24, Math.max(150, height * 0.26));
+    ctx.fillText(`Estado: ${selectedPromotion.status}`, 24, Math.max(180, height * 0.3));
+
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(24, Math.max(210, height * 0.35), width - 48, Math.max(80, height * 0.15));
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 18px Inter, Arial, sans-serif';
+    ctx.fillText('Beneficios destacados', 40, Math.max(240, height * 0.39));
+    ctx.font = '14px Inter, Arial, sans-serif';
+    ctx.fillText('• Participaciones dobles en el sorteo anual.', 40, Math.max(270, height * 0.43));
+    ctx.fillText('• Cupón premium y acceso prioritario.', 40, Math.max(295, height * 0.47));
+    ctx.fillText('• Registro digital con validación notarial.', 40, Math.max(320, height * 0.51));
+
+    ctx.fillStyle = '#f97316';
+    ctx.fillRect(24, height - 80, width - 48, 50);
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 18px Inter, Arial, sans-serif';
+    ctx.fillText('premiosred.com | +18', 40, height - 48);
+  }, [selectedPromotion, selectedSize]);
+
+  const handleExportPdf = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL('image/png');
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Exportar Canvas</title>
+          <style>
+            body { margin: 0; display: flex; justify-content: center; align-items: center; background: #0f172a; }
+            img { max-width: 100%; height: auto; }
+          </style>
+        </head>
+        <body>
+          <img src="${dataUrl}" />
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
 
   const handleEditOpen = (item: any, type: string) => {
     setEditingItem({ ...item, _type: type });
@@ -323,6 +443,96 @@ const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
             </div>
           </div>
         );
+      case 'promo-canvas':
+        return (
+          <div className="space-y-8 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-black uppercase tracking-tighter">Canvas Maestro de Promos</h2>
+                <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mt-1">Generador de formatos 50x50, 50x150, 70x100 cm y A4</p>
+              </div>
+              <button
+                onClick={handleExportPdf}
+                className="bg-orange-600 hover:bg-orange-500 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-orange-600/20 flex items-center gap-2"
+              >
+                <FileText className="w-4 h-4" /> Exportar PDF
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-[1.1fr_1.4fr] gap-8">
+              <div className="bg-slate-900/40 border border-white/5 rounded-[2.5rem] p-8 space-y-6">
+                <div>
+                  <h3 className="text-lg font-black uppercase tracking-tighter mb-2">Formato de impresión</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    {canvasSizes.map((size) => (
+                      <button
+                        key={size.id}
+                        onClick={() => setSelectedCanvasSize(size.id)}
+                        className={`px-4 py-3 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all ${
+                          selectedCanvasSize === size.id
+                            ? 'bg-orange-600/20 border-orange-500 text-orange-500'
+                            : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {size.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-black uppercase tracking-tighter mb-2">Registros de promociones</h3>
+                  <div className="space-y-3">
+                    {promotionRecords.map((promo) => (
+                      <button
+                        key={promo.id}
+                        onClick={() => setSelectedPromoId(promo.id)}
+                        className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all text-left ${
+                          selectedPromoId === promo.id
+                            ? 'border-orange-500/60 bg-orange-600/10'
+                            : 'border-white/10 bg-white/5 hover:bg-white/10'
+                        }`}
+                      >
+                        <div>
+                          <div className="text-xs font-black uppercase">{promo.title}</div>
+                          <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                            {promo.sponsor} · {promo.updatedAt}
+                          </div>
+                        </div>
+                        <div className="text-[9px] font-black uppercase text-orange-500">{promo.status}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  Vista previa generada en {selectedSize.label}. Ajusta el formato para exportar en PDF.
+                </div>
+              </div>
+
+              <div className="bg-slate-900/40 border border-white/5 rounded-[2.5rem] p-8 flex flex-col items-center gap-6">
+                <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                  Canvas activo: {selectedPromotion.title}
+                </div>
+                <div className="bg-slate-950 rounded-[2rem] border border-white/10 p-4 w-full flex items-center justify-center overflow-auto">
+                  <canvas ref={canvasRef} className="rounded-2xl shadow-2xl border border-white/10" />
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3 w-full">
+                  <button
+                    onClick={handleExportPdf}
+                    className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all"
+                  >
+                    Vista previa PDF
+                  </button>
+                  <button className="flex-1 bg-orange-600 hover:bg-orange-500 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-2xl shadow-orange-600/30 transition-all flex items-center justify-center gap-2">
+                    <Save className="w-4 h-4" /> Guardar versión
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
 
       default:
         return (
@@ -381,6 +591,7 @@ const AdminDashboard: React.FC<Props> = ({ user, onLogout }) => {
             { id: 'agreements', label: 'Convenios Marcas', icon: Handshake },
             { id: 'raffles', label: 'Sorteos Activos', icon: Gift },
             { id: 'entries', label: 'Participaciones', icon: Ticket },
+            { id: 'promo-canvas', label: 'Canvas Promos', icon: ImageIcon },
           ].map((item) => (
             <button
               key={item.id}
